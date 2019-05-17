@@ -1,12 +1,9 @@
-from flask import Flask, render_template, request, redirect, session, flash, url_for
+from flask import Flask, render_template, request, redirect, session, flash, url_for, send_from_directory
 
 from models import Jogo, Usuario
-
 from flask_mysqldb import MySQL
-
-from dao import JogoDao
-from dao import UsuarioDao
-
+from dao import JogoDao, UsuarioDao
+import os
 
 app = Flask(__name__)
 app.secret_key = 'alura'
@@ -16,11 +13,13 @@ app.config['MYSQL_USER'] = "root"
 app.config['MYSQL_PASSWORD'] = ""
 app.config['MYSQL_DB'] = "jogoteca"
 app.config['MYSQL_PORT'] = 3306
+app.config['UPLOAD_PATH'] = os.path.dirname(os.path.abspath(__file__)) + '/upload'
 
 db = MySQL(app)
 
 jogo_dao = JogoDao(db)
 
+usuario_dao = UsuarioDao(db)
 
 @app.route('/')
 def index():
@@ -39,7 +38,13 @@ def criar():
     categoria = request.form['categoria']
     console = request.form['console']
     jogo = Jogo(nome, categoria, console)
-    jogo_dao.salvar(jogo)
+    jogo = jogo_dao.salvar(jogo)
+
+    arquivo = request.files['arquivo']
+    upload_path = app.config['UPLOAD_PATH']
+
+    arquivo.save('{0}{1}{2}{3}'.format(upload_path, '/capa_', jogo.id, '.jpg'))
+
     return redirect(url_for('index'))
 
 @app.route('/editar/<int:id>')
@@ -47,7 +52,7 @@ def editar(id):
     if 'usuario_logado' not in session or session['usuario_logado'] == None:
         return redirect(url_for('login', proxima=url_for('editar')))
     jogo = jogo_dao.busca_por_id(id)
-    return render_template('editar.html', titulo='Editando jogo', jogo=jogo)
+    return render_template('editar.html', titulo='Editando jogo', jogo=jogo, capa_jogo='{0}{1}{2}'.format('capa_', id, '.jpg'))
 
 @app.route('/deletar/<int:id>')
 def deletar(id):
@@ -88,6 +93,10 @@ def logout():
     flash('Nenhum usuário logado!')
     return redirect(url_for('index'))
 
+
+@app.route('/upload/<nome_arquivo>')
+def imagem(nome_arquivo):
+    return send_from_directory('upload', nome_arquivo)
 
 if __name__ == '__main__':
     app.run(debug=True)

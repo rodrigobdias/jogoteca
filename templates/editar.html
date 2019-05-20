@@ -3,7 +3,7 @@
       <form action="{{ url_for('atualizar') }}" method="post">
 
         <figure>
-          <img style="margin-bottom: 10px" src="{{ url_for('imagem', nome_arquivo=capa_jogo)}}">
+          <img src="{{ url_for('imagem', nome_arquivo=capa_jogo)}}">
           <figcaption>
             <label>
                <input type="file" name="arquivo" accept=".jpg">
